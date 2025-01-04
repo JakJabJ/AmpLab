@@ -1,0 +1,62 @@
+@startuml
+
+!theme plain
+top to bottom direction
+skinparam linetype ortho
+skinparam layout hierarchical
+
+skinparam class {
+    BackgroundColor #ccffcc
+    BorderColor #006600
+}
+
+class ButtonFactory {
+    +Button CreateCustomButton(string imagePath, int left, int top, int width, int height)
+}
+
+class MainForm {
+    +MainForm()
+    +Main()
+}
+
+class ScreenManager {
+    -Form mainForm
+    -Random random
+    +double TargetValue
+    +string SelectedConfiguration
+    -string input1Value
+    -string input2Value
+    +ScreenManager(Form form)
+    +void InitializeStartScreen()
+    +void InitializeConfigurationScreen()
+    +void InitializeProjectScreen()
+    -void SelectDifficulty(string difficulty)
+    -void SelectConfiguration(string configuration)
+    -void Simulate(string input1, string input2)
+    -void ShowFinalScreen(double result)
+}
+
+class SimulationManager {
+    -ScreenManager screenManager
+    +SimulationManager(ScreenManager manager)
+    +double Simulate(double value1, double value2)
+    +void ShowSimulationResult(double result, bool isInvalid, Action returnToProject, Action submitProject)
+}
+
+
+
+MainForm -[#5fad65,dashed,bold]-> ScreenManager
+MainForm -[#3574f0,bold]-> ScreenManager
+MainForm -[#3574f0,bold]-> SimulationManager
+MainForm -[#5fad65,dashed,bold]-> SimulationManager
+ScreenManager -[#3574f0,bold]-> ButtonFactory
+ScreenManager -[#3574f0,bold]-> SimulationManager
+SimulationManager -[#3574f0,bold]-> ScreenManager
+SimulationManager -[#f2c55c,bold]-* ScreenManager
+SimulationManager -[#5fad65,dashed,bold]-> ScreenManager
+MainForm -[#transparent]-> MainForm : ""
+MainForm -[#transparent]-> ScreenManager : ""
+ScreenManager -[#transparent]-> SimulationManager : ""
+SimulationManager -[#transparent]-> ButtonFactory : ""
+
+@enduml

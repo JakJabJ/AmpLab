@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Globalization;
 
 namespace AmpLab
 {
@@ -88,59 +89,80 @@ namespace AmpLab
 
         // Ekran projektowy
         public void InitializeProjectScreen()
-        {
-            mainForm.Controls.Clear();
-            mainForm.Text = "AmpLab: Sztuka Analogów - Stół Projektowy";
-            mainForm.BackgroundImage = Image.FromFile("../../../images/Background.png");
-            mainForm.BackgroundImageLayout = ImageLayout.Stretch;
+{
+    mainForm.Controls.Clear();
+    mainForm.Text = "AmpLab: Sztuka Analogów - Stół Projektowy";
+    mainForm.BackgroundImage = Image.FromFile("../../../images/Background.png");
+    mainForm.BackgroundImageLayout = ImageLayout.Stretch;
 
-            var input1 = new TextBox { Left = (mainForm.Width / 2) - 110, Top = (mainForm.Height / 2) - 20, Width = 100, Text = input1Value };
-            var input2 = new TextBox { Left = (mainForm.Width / 2) + 10, Top = (mainForm.Height / 2) - 20, Width = 100, Text = input2Value };
+    if (SelectedConfiguration == "CS")
+    {
+        var inputRG1 = new TextBox { Left = (mainForm.Width / 2) - 110, Top = (mainForm.Height / 2) - 60, Width = 100 };
+        var inputRG2 = new TextBox { Left = (mainForm.Width / 2) + 10, Top = (mainForm.Height / 2) - 60, Width = 100 };
+        var inputRD = new TextBox { Left = (mainForm.Width / 2) - 110, Top = (mainForm.Height / 2) - 20, Width = 100 };
+        var inputRS = new TextBox { Left = (mainForm.Width / 2) + 10, Top = (mainForm.Height / 2) - 20, Width = 100 };
+        var inputCG = new TextBox { Left = (mainForm.Width / 2) - 110, Top = (mainForm.Height / 2) + 20, Width = 100 };
+        var inputCS = new TextBox { Left = (mainForm.Width / 2) + 10, Top = (mainForm.Height / 2) + 20, Width = 100 };
+        var inputCD = new TextBox { Left = (mainForm.Width / 2) - 110, Top = (mainForm.Height / 2) + 60, Width = 100 };
 
-            int buttonWidth = 300, buttonHeight = 100, spacing = 20;
-            int startX = (mainForm.Width - ((buttonWidth * 3) + (spacing * 2))) / 2;
-            int startY = mainForm.Height - buttonHeight - 50;
+        int buttonWidth = 300, buttonHeight = 100, spacing = 20;
+        int startX = (mainForm.Width - ((buttonWidth * 3) + (spacing * 2))) / 2;
+        int startY = mainForm.Height - buttonHeight - 50;
 
-            var simulateButton = ButtonFactory.CreateCustomButton("../../../images/symulacja_button.png", startX, startY, buttonWidth, buttonHeight);
-            var helpButton = ButtonFactory.CreateCustomButton("../../../images/podrecznik_button.png", startX + buttonWidth + spacing, startY, buttonWidth, buttonHeight);
-            var notesButton = ButtonFactory.CreateCustomButton("../../../images/notatki_button.png", startX + (buttonWidth + spacing) * 2, startY, buttonWidth, buttonHeight);
+        var simulateButton = ButtonFactory.CreateCustomButton("../../../images/symulacja_button.png", startX, startY, buttonWidth, buttonHeight);
+        var helpButton = ButtonFactory.CreateCustomButton("../../../images/podrecznik_button.png", startX + buttonWidth + spacing, startY, buttonWidth, buttonHeight);
+        var notesButton = ButtonFactory.CreateCustomButton("../../../images/notatki_button.png", startX + (buttonWidth + spacing) * 2, startY, buttonWidth, buttonHeight);
 
-            simulateButton.Click += (sender, e) => Simulate(input1.Text, input2.Text);
-            helpButton.Click += (sender, e) => MessageBox.Show("Pomoc: tutaj znajdziesz wskazówki!", "Pomoc");
-            notesButton.Click += (sender, e) => MessageBox.Show($"Ostatni wynik: {lastSimulationResult:F2}", "Notatki");
+        simulateButton.Click += (sender, e) => Simulate(inputRG1.Text, inputRG2.Text, inputRD.Text, inputRS.Text, inputCG.Text, inputCS.Text, inputCD.Text);
+        helpButton.Click += (sender, e) => MessageBox.Show("Pomoc: tutaj znajdziesz wskazówki!", "Pomoc");
+        notesButton.Click += (sender, e) => MessageBox.Show($"Ostatni wynik: {lastSimulationResult:F2}", "Notatki");
 
-            mainForm.Controls.AddRange(new Control[] { input1, input2, simulateButton, helpButton, notesButton });
-        }
+        mainForm.Controls.AddRange(new Control[] { inputRG1, inputRG2, inputRD, inputRS, inputCG, inputCS, inputCD, simulateButton, helpButton, notesButton });
+    }
+    else
+    {
+        // Existing code for other configurations
+    }
+}
 
         private double lastSimulationResult;
 
-        private void Simulate(string input1, string input2)
+        private void Simulate(string inputRG1, string inputRG2, string inputRD, string inputRS, string inputCG, string inputCS, string inputCD)
         {
-            input1Value = input1;
-            input2Value = input2;
+            input1Value = inputRG1;
+            input2Value = inputRG2;
 
-            double.TryParse(input1, out double value1);
-            double.TryParse(input2, out double value2);
+            var culture = CultureInfo.InvariantCulture.Clone() as CultureInfo;
+            culture.NumberFormat.NumberDecimalSeparator = ",";
+
+            double.TryParse(inputRG1, NumberStyles.Any, culture, out double RG1);
+            double.TryParse(inputRG2, NumberStyles.Any, culture, out double RG2);
+            double.TryParse(inputRD, NumberStyles.Any, culture, out double RD);
+            double.TryParse(inputRS, NumberStyles.Any, culture, out double RS);
+            double.TryParse(inputCG, NumberStyles.Any, culture, out double CG);
+            double.TryParse(inputCS, NumberStyles.Any, culture, out double CS);
+            double.TryParse(inputCD, NumberStyles.Any, culture, out double CD);
 
             var simulationManager = new SimulationManager(this);
-            double result = simulationManager.Simulate(value1, value2);
+            var results = simulationManager.Simulate(RG1 * 1000, RG2 * 1000, RD * 1000, RS * 1000, CG / 1000000000, CS / 1000000000, CD / 1000000000);
 
-            bool isInvalid = result <= 0;
-            simulationManager.ShowSimulationResult(result, isInvalid,
+            bool isInvalid = results[5] <= 0; // Update this condition based on your calculations
+            results = results.Take(5).ToArray();
+            simulationManager.ShowSimulationResult(results, isInvalid,
                 returnToProject: () => InitializeProjectScreen(),
-                submitProject: () => ShowFinalScreen(result));
+                submitProject: () => ShowFinalScreen(results));
         }
 
-        private void ShowFinalScreen(double result)
+        private void ShowFinalScreen(double[] results)
         {
             mainForm.Controls.Clear();
             mainForm.Text = "AmpLab: Sztuka Analogów - Ocena";
 
-            double difference = Math.Abs(TargetValue - result);
+            double difference = Math.Abs(TargetValue - results[0]); // Example calculation, update as needed
 
             var finalMessage = new Label
             {
-                Text = $"Twój wynik to: {result:F2}\n" +
+                Text = $"Twoje wyniki to: {string.Join(", ", results.Select(r => r.ToString("F2")))}\n" +
                        $"Wartość zadana: {TargetValue:F2}\n" +
                        $"Różnica: {difference:F2}\nDziękujemy za projekt!",
                 Left = 50,
