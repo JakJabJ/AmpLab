@@ -1,8 +1,3 @@
-using System;
-using System.Linq;
-using System.Windows.Forms;
-using System.Drawing;
-
 namespace AmpLab
 {
     public class SimulationManager
@@ -27,8 +22,9 @@ namespace AmpLab
 
         private double[] SimulateCS(double RG1, double RG2, double RD, double RS, double CG, double CS, double CD)
         {
+            double error = 1;
             // Initialize variables
-            double Id = 0;
+            double Id = 0, delta = -1;
             double Vgs = 0;
             double Vs = 0;
             double Vd = 0;
@@ -53,7 +49,7 @@ namespace AmpLab
             double a = Kn * Math.Pow(RS, 2);
             double b = (Kn * RS * (Vt - 2 * Vg) - 1);
             double c = Kn * Math.Pow((Vg - Vt), 2);
-            double delta = Math.Pow(b, 2) - 4 * a * c;
+            delta = Math.Pow(b, 2) - 4 * a * c;
 
             if (delta > 0)
             {
@@ -73,6 +69,7 @@ namespace AmpLab
                         if ((Vgs - Vt) <= Vds)
                         {
                             gm = 2 * Math.Sqrt(Kn * Id);
+                            error = 0;
                             break;
                         }
                     }
@@ -92,6 +89,7 @@ namespace AmpLab
                     if ((Vgs - Vt) <= Vds)
                     {
                         gm = 2 * Math.Sqrt(Kn * Id);
+                        error = 0;
                     }
                 }
             }
@@ -135,10 +133,10 @@ namespace AmpLab
 
             // Calculate fL3dB
             double fL3dB = (1 / (2 * Math.PI)) * Math.Sqrt((1 / Math.Pow(Tl1, 2)) + (1 / Math.Pow(Tl2, 2)) + (1 / Math.Pow(Tl3, 2)));
-            
-            Console.WriteLine($"Vg: {Vg}, a: {a}, b: {b}, c: {c}, delta: {delta}");
-            
-            return new double[] { Ku, Rin, Rout, fH3dB, fL3dB, delta};
+
+            //Console.WriteLine($"Vg: {Vg}, a: {a}, b: {b}, c: {c}, delta: {delta}");
+
+            return new double[] { Ku, Rin, Rout, fH3dB, fL3dB, delta, Id, error};
         }
 
         public void ShowSimulationResult(double[] results, bool isInvalid, Action returnToProject, Action submitProject)
@@ -146,26 +144,62 @@ namespace AmpLab
             Form simulationResultForm = new Form
             {
                 Text = "Wynik Symulacji",
-                Width = 300,
-                Height = 200,
+                Width = 700,
+                Height = 400,
                 StartPosition = FormStartPosition.CenterParent,
                 BackgroundImage = Image.FromFile("../../../images/Background.png"),
                 BackgroundImageLayout = ImageLayout.Stretch
             };
 
-            Label resultLabel = new Label
+            if (isInvalid)
             {
-                Text = isInvalid ? "Wynik nie może być mniejszy od 0" : $"Wyniki: {string.Join(", ", results.Select(r => r.ToString("F2")))}",
-                Left = 20,
-                Top = 20,
-                AutoSize = true
-            };
+                Label errorLabel = new Label
+                {
+                    Text = "Tranzystor nie pracuje w zakresie nasycenia! Wzmacniacz nie działa, zwróć szczególną uwagę na rezystory",
+                    Left = 20,
+                    Top = 20,
+                    AutoSize = true
+                };
+                simulationResultForm.Controls.Add(errorLabel);
+            }
+            else
+            {
+                double[] differences = new double[results.Length];
+
+                var dataGridView = new DataGridView
+                {
+                    ColumnCount = 3,
+                    Columns =
+                    {
+                        [0] = { Name = "Wartość" },
+                        [1] = { Name = "Zadane" },
+                        [2] = { Name = "Uzyskane" },
+                    },
+                    Rows =
+                    {
+                        { "Wzmocnienie [V/V]", screenManager.TargetValue[0].ToString("F2"), results[0].ToString("F2")},
+                        { "Rin [kΩ]", (screenManager.TargetValue[1] / 1000).ToString("F2"), (results[1] / 1000).ToString("F2")},
+                        { "Rout [kΩ]", (screenManager.TargetValue[2] / 1000).ToString("F2"), (results[2] / 1000).ToString("F2")},
+                        { "fL3dB [Hz]", screenManager.TargetValue[4].ToString("F2"), results[4].ToString("F2")},
+                        { "fH3dB [kHz]", (screenManager.TargetValue[3] / 1000).ToString("F2"), (results[3] / 1000).ToString("F2")}
+                    },
+                    AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                    Left = 50,
+                    Top = 50,
+                    Width = 600,
+                    //Height = 200,
+                    AllowUserToAddRows = false,
+                    ReadOnly = true
+                };
+
+                simulationResultForm.Controls.Add(dataGridView);
+            }
 
             Button returnButton = new Button
             {
                 Text = "Wróć do Projektowania",
                 Left = 160,
-                Top = 60,
+                Top = 300,
                 Width = 120
             };
             returnButton.Click += (s, args) =>
@@ -174,7 +208,6 @@ namespace AmpLab
                 returnToProject?.Invoke();
             };
 
-            simulationResultForm.Controls.Add(resultLabel);
             simulationResultForm.Controls.Add(returnButton);
 
             if (!isInvalid)
@@ -183,7 +216,7 @@ namespace AmpLab
                 {
                     Text = "Oddaj Projekt",
                     Left = 20,
-                    Top = 60,
+                    Top = 300,
                     Width = 120
                 };
                 submitButton.Click += (s, args) =>
