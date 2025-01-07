@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Globalization;
+using System.Security.Permissions;
 
 namespace AmpLab
 {
@@ -77,19 +78,99 @@ namespace AmpLab
 
         private double[] targetEasy(double K, double Ri, double Ro, double fH, double fL)
         {
-            K = -14;
-            Ri = 292000;
-            Ro = 47000;
-            fH = 172000;
-            fL = 80;
+           double[] results = InputGenerator();
+
+// Store results in variables
+            K = results[0];
+            Ri = results[1];
+            Ro = results[2];
+            fH = results[3];
+            fL = results[4];
             return new double[] { K, Ri, Ro, fH, fL};
         }
+
         private double[] targetMedium(double K, double Ri, double Ro, double fH, double fL)
         {
+            double[] results = InputGenerator();
+            Random random = new Random();
+// Store results in variables
+            K = results[0] * (0.9 + (random.NextDouble() * 0.2));
+            Ri = results[1] * (0.9 + (random.NextDouble() * 0.2));
+            Ro = results[2] * (0.9 + (random.NextDouble() * 0.2));
+            fH = results[3] * (0.9 + (random.NextDouble() * 0.2));
+            fL = results[4] * (0.9 + (random.NextDouble() * 0.2));
             return new double[] { K, Ri, Ro, fH, fL};
         }
         private double[] targetHard(double K, double Ri, double Ro, double fH, double fL)
         {
+            double[] results = InputGenerator();
+            Random random = new Random();
+// Store results in variables
+            K = results[0] * (0.8 + (random.NextDouble() * 0.4));
+            Ri = results[1] * (0.8 + (random.NextDouble() * 0.4));
+            Ro = results[2] * (0.8 + (random.NextDouble() * 0.4));
+            fH = results[3] * (0.8 + (random.NextDouble() * 0.4));
+            fL = results[4] * (0.8 + (random.NextDouble() * 0.4));
+            return new double[] { K, Ri, Ro, fH, fL};
+        }
+        
+        private double[] InputGenerator()
+        {
+            bool repeat = false;
+            double[] results;
+            double RG1;
+            double RG2;
+            double RD;
+            double RS;
+            double CG;
+            double CS;
+            double CD;
+            do
+            {
+                // Randomize values
+                RG1 = Math.Round(random.NextDouble() * 990000 + 10000, 2); // Example range: 10 to 1000
+                RG2 = Math.Round(random.NextDouble() * 790000 + 10000, 2); // Example range: 10 to 800
+                RD = Math.Round(random.NextDouble() * 99000 + 1000, 2); // Example range: 1 to 100
+                RS = Math.Round(random.NextDouble() * 99000 + 1000, 2); // Example range: 1 to 100
+                CG = random.NextDouble() * 1.99e-8 + 1e-10; // Example range: 0.1 to 20
+                CS = random.NextDouble() * 9.99e-7 + 1e-8; // Example range: 10 to 1000
+                CD = random.NextDouble() * 4.99e-7 + 1e-9; // Example range: 1 to 500
+                Console.WriteLine("RG1: " + RG1);
+                Console.WriteLine("RG2: " + RG2);
+                Console.WriteLine("RD: " + RD);
+                Console.WriteLine("RS: " + RS);
+                Console.WriteLine("CG: " + CG);
+                Console.WriteLine("CS: " + CS);
+                Console.WriteLine("CD: " + CD);
+
+// Perform simulation
+                var simulationManager = new SimulationManager(this);
+                int confGenerate = random.Next(1, 4);
+                switch (confGenerate)
+                {
+                    case 1:
+                        results = simulationManager.SimulateCS(RG1, RG2, RD, RS, CG, CS, CD);
+                        break;
+                    case 2:
+                        results = simulationManager.SimulateCG(RG1, RG2, RD, RS, CG, CS, CD);
+                        break;
+                    case 3:
+                        results = simulationManager.SimulateCD(RG1, RG2, RD, RS, CG, CS, CD);
+                        break; 
+                    default:
+                        results = new double[] {0,0,0,0,0,0,0};
+                        break;
+                }
+                //results = simulationManager.SimulateCS(RG1, RG2, RD, RS, CG, CS, CD);
+                repeat = Math.Round(results[0],1) == 0 || results[5] < 0 || results[6] == 0 || results[7] == 1;
+                Console.WriteLine("Ku: " + results[0]);
+                Console.WriteLine("Repeat: " + repeat);
+            }while(repeat);
+            K = results[0];
+            Ri = results[1];
+            Ro = results[2];
+            fH = results[3];
+            fL = results[4];
             return new double[] { K, Ri, Ro, fH, fL};
         }
         // Ekran konfiguracji
@@ -138,6 +219,10 @@ namespace AmpLab
             var inputCG = new TextBox { Width = 80, Text = InputCG };
             var inputCS = new TextBox { Width = 80, Text = InputCS };
             var inputCD = new TextBox { Width = 80, Text = InputCD };
+            if (SelectedConfiguration == "CD")
+            {
+                inputRD.Enabled = false;
+            }
             switch (SelectedConfiguration)
             {
                 case "CS":
@@ -159,9 +244,35 @@ namespace AmpLab
                     break;
                 case "CD":
                     mainForm.BackgroundImage = Image.FromFile("../../../images/Background_CD.png");
+                    inputRG1.Left = (mainForm.Width / 2) - 155;
+                    inputRG1.Top = (mainForm.Height / 2) - 258;
+                    inputRG2.Left = (mainForm.Width / 2) - 155;
+                    inputRG2.Top = (mainForm.Height / 2) - 43;
+                    inputRS.Left = (mainForm.Width / 2) - 28;
+                    inputRS.Top = (mainForm.Height / 2) - 43;
+                    inputCG.Left = (mainForm.Width / 2) - 268;
+                    inputCG.Top = (mainForm.Height / 2) - 120;
+                    inputCS.Left = (mainForm.Width / 2) + 142;
+                    inputCS.Top = (mainForm.Height / 2) - 43;
+                    inputCD.Left = (mainForm.Width / 2) + 45;
+                    inputCD.Top = (mainForm.Height / 2) - 180;
                     break;
                 case "CG":
                     mainForm.BackgroundImage = Image.FromFile("../../../images/Background_CG.png");
+                    inputRG1.Left = (mainForm.Width / 2) - 155;
+                    inputRG1.Top = (mainForm.Height / 2) - 258;
+                    inputRG2.Left = (mainForm.Width / 2) - 155;
+                    inputRG2.Top = (mainForm.Height / 2) - 43;
+                    inputRS.Left = (mainForm.Width / 2) - 28;
+                    inputRS.Top = (mainForm.Height / 2) - 43;
+                    inputRD.Left = (mainForm.Width / 2) - 28;
+                    inputRD.Top = (mainForm.Height / 2) - 258;
+                    inputCG.Left = (mainForm.Width / 2) - 268;
+                    inputCG.Top = (mainForm.Height / 2) - 120;
+                    inputCS.Left = (mainForm.Width / 2) + 142;
+                    inputCS.Top = (mainForm.Height / 2) - 43;
+                    inputCD.Left = (mainForm.Width / 2) + 45;
+                    inputCD.Top = (mainForm.Height / 2) - 180;
                     break;
                 default:
                     mainForm.BackgroundImage = null;
@@ -176,7 +287,14 @@ namespace AmpLab
             var helpButton = ButtonFactory.CreateCustomButton("../../../images/podrecznik_button.png", startX + buttonWidth + spacing, startY, buttonWidth, buttonHeight);
             var notesButton = ButtonFactory.CreateCustomButton("../../../images/notatki_button.png", startX + (buttonWidth + spacing) * 2, startY, buttonWidth, buttonHeight);
 
-            simulateButton.Click += (sender, e) => Simulate(inputRG1.Text, inputRG2.Text, inputRD.Text, inputRS.Text, inputCG.Text, inputCS.Text, inputCD.Text);
+            if(SelectedConfiguration == "CD")
+            {
+                simulateButton.Click += (sender, e) => Simulate(inputRG1.Text, inputRG2.Text, "0", inputRS.Text, inputCG.Text, inputCS.Text, inputCD.Text);
+            }
+            else
+            {
+                simulateButton.Click += (sender, e) => Simulate(inputRG1.Text, inputRG2.Text, inputRD.Text, inputRS.Text, inputCG.Text, inputCS.Text, inputCD.Text);
+            }
             helpButton.Click += (sender, e) => MessageBox.Show("Pomoc: tutaj znajdziesz wskazówki!", "Pomoc");
             notesButton.Click += (sender, e) => MessageBox.Show($"\tWartości zadane\tuzyskane\n\n" +
                                                                 $"Wzmocnienie:\t{TargetValue[0]:F2}\t{lastSimulationResult[0]:F2}\tV/V\n" +
@@ -215,8 +333,8 @@ namespace AmpLab
         {
             InputRG1 = inputRG1;
             InputRG2 = inputRG2;
-            InputRD = inputRD;
             InputRS = inputRS;
+            InputRD = inputRD;
             InputCG = inputCG;
             InputCS = inputCS;
             InputCD = inputCD;
@@ -226,6 +344,10 @@ namespace AmpLab
 
             double.TryParse(inputRG1, NumberStyles.Any, culture, out double RG1);
             double.TryParse(inputRG2, NumberStyles.Any, culture, out double RG2);
+            if (SelectedConfiguration == "CD")
+            {
+                inputRD = "0";
+            }
             double.TryParse(inputRD, NumberStyles.Any, culture, out double RD);
             double.TryParse(inputRS, NumberStyles.Any, culture, out double RS);
             double.TryParse(inputCG, NumberStyles.Any, culture, out double CG);
@@ -234,6 +356,8 @@ namespace AmpLab
 
             var simulationManager = new SimulationManager(this);
             var results = simulationManager.Simulate(RG1 * 1000, RG2 * 1000, RD * 1000, RS * 1000, CG / 1000000000, CS / 1000000000, CD / 1000000000);
+            
+            
             bool isInvalid;
             if (SelectedConfiguration == "CD")
             {
@@ -291,6 +415,14 @@ namespace AmpLab
 
     double sumError = differences.Sum();
     double rating = CalculateRating(sumError, elapsedSeconds, SelectedConfiguration);
+    elapsedSeconds = 0;
+    InputRG1 = null;
+    InputRG2 = null;
+    InputRD = null;
+    InputRS = null;
+    InputCG = null;
+    InputCS = null;
+    InputCD = null;
 
     var ratingLabel = new Label
     {
