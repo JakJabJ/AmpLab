@@ -251,53 +251,104 @@ namespace AmpLab
         }
 
         private void ShowFinalScreen(double[] results)
+{
+    mainForm.Controls.Clear();
+    mainForm.Text = "AmpLab: Sztuka Analogów - Ocena";
+    projectTimer.Stop();
+    timerRunning = false;
+
+    double[] differences = new double[results.Length];
+    for (int i = 0; i < results.Length; i++)
+    {
+        differences[i] = Math.Abs(Math.Abs(TargetValue[i] - results[i]) / TargetValue[i]) * 100;
+    }
+
+    var dataGridView = new DataGridView
+    {
+        ColumnCount = 4,
+        Columns =
         {
-            mainForm.Controls.Clear();
-            mainForm.Text = "AmpLab: Sztuka Analogów - Ocena";
+            [0] = { Name = "Wartość" },
+            [1] = { Name = "Zadane" },
+            [2] = { Name = "Uzyskane" },
+            [3] = { Name = "Błąd [%]" }
+        },
+        Rows =
+        {
+            { "Wzmocnienie [V/V]", TargetValue[0].ToString("F2"), results[0].ToString("F2"), differences[0].ToString("F2") },
+            { "Rin [kΩ]", (TargetValue[1] / 1000).ToString("F2"), (results[1] / 1000).ToString("F2"), differences[1].ToString("F2") },
+            { "Rout [kΩ]", (TargetValue[2] / 1000).ToString("F2"), (results[2] / 1000).ToString("F2"), differences[2].ToString("F2") },
+            { "fL3dB [Hz]", TargetValue[4].ToString("F2"), results[4].ToString("F2"), differences[4].ToString("F2") },
+            { "fH3dB [kHz]", (TargetValue[3] / 1000).ToString("F2"), (results[3] / 1000).ToString("F2"), differences[3].ToString("F2") }
+        },
+        AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+        Left = 50,
+        Top = 50,
+        Width = 600,
+        AllowUserToAddRows = false,
+        ReadOnly = true
+    };
 
-            double[] differences = new double[results.Length];
-            for (int i = 0; i < results.Length; i++)
-            {
-                differences[i] = Math.Abs(Math.Abs(TargetValue[i] - results[i])/TargetValue[i])*100;
-            }
+    double sumError = differences.Sum();
+    double rating = CalculateRating(sumError, elapsedSeconds, SelectedConfiguration);
 
-            var dataGridView = new DataGridView
-            {
-                ColumnCount = 4,
-                Columns =
-                {
-                    [0] = { Name = "Wartość" },
-                    [1] = { Name = "Zadane" },
-                    [2] = { Name = "Uzyskane" },
-                    [3] = { Name = "Błąd [%]" }
-                },
-                Rows =
-                {
-                    { "Wzmocnienie [V/V]", TargetValue[0].ToString("F2"), results[0].ToString("F2"), differences[0].ToString("F2") },
-                    { "Rin [kΩ]", (TargetValue[1]/1000).ToString("F2"), (results[1]/1000).ToString("F2"), differences[1].ToString("F2") },
-                    { "Rout [kΩ]", (TargetValue[2]/1000).ToString("F2"), (results[2]/1000).ToString("F2"), differences[2].ToString("F2") },
-                    { "fL3dB [Hz]", TargetValue[4].ToString("F2"), results[4].ToString("F2"), differences[4].ToString("F2") },
-                    { "fH3dB [kHz]", (TargetValue[3]/1000).ToString("F2"), (results[3]/1000).ToString("F2"), differences[3].ToString("F2") }
-                },
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                Left = 50,
-                Top = 50,
-                Width = 600,
-                AllowUserToAddRows = false,
-                ReadOnly = true
-                //Height = 200
-            };
+    var ratingLabel = new Label
+    {
+        Text = rating >= 4.5 ? $"Wyśmienicie! Twoja ocena końcowa to: {rating:F1} / 5,0" :
+            rating >= 3.0 ? $"Dobra robota! Twoja ocena końcowa to: {rating:F1} / 5,0" :
+            rating >= 2.0 ? $"Jesteś na dobrej drodze! Twoja ocena końcowa to: {rating:F1} / 5,0" :
+            $"Postaraj sie bardziej! Twoja ocena końcowa to: {rating:F1} / 5,0",
+        Left = 50,
+        Top = 300,
+        AutoSize = true,
+        Font = new Font("Arial", 16, FontStyle.Bold)
+    };
 
-            var exitButton = new Button
-            {
-                Text = "Zakończ",
-                Left = 50,
-                Top = 300,
-                Width = 100
-            };
-            exitButton.Click += (s, e) => InitializeStartScreen();
+    var exitButton = new Button
+    {
+        Text = "Zakończ",
+        Left = 50,
+        Top = 350,
+        Width = 100
+    };
+    exitButton.Click += (s, e) => InitializeStartScreen();
 
-            mainForm.Controls.AddRange(new Control[] { dataGridView, exitButton });
-        }
+    mainForm.Controls.AddRange(new Control[] { dataGridView, ratingLabel, exitButton });
+}
+        private double CalculateRating(double sumError, int elapsedSeconds, string difficulty)
+{
+    double maxTime, maxError, timePenalty, errorPenalty;
+    switch (difficulty)
+    {
+        case "Easy":
+            maxTime = 600; // 10 minutes
+            maxError = 80; // 80%
+            timePenalty = 120; // 2 minutes
+            errorPenalty = 20; // 20%
+            break;
+        case "Medium":
+            maxTime = 600; // 10 minutes
+            maxError = 60; // 60%
+            timePenalty = 60; // 1 minute
+            errorPenalty = 10; // 10%
+            break;
+        case "Hard":
+            maxTime = 420; // 7 minutes
+            maxError = 30; // 30%
+            timePenalty = 120; // 2 minutes
+            errorPenalty = 5; // 5%
+            break;
+        default:
+            maxTime = 600;
+            maxError = 80;
+            timePenalty = 120;
+            errorPenalty = 20;
+            break;
+    }
+
+    double timeFactor = Math.Max(0,(elapsedSeconds - maxTime)) / timePenalty * 0.5;
+    double errorFactor = Math.Max(0,(sumError - maxError)) / errorPenalty * 0.5;
+    return Math.Max(0,Math.Round(5 - timeFactor - errorFactor, 1));
+}
     }
 }

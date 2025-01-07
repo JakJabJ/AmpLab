@@ -90,6 +90,7 @@ namespace AmpLab
                     {
                         gm = 2 * Math.Sqrt(Kn * Id);
                         error = 0;
+                        
                     }
                 }
             }
