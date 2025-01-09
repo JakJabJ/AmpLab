@@ -23,8 +23,10 @@ namespace AmpLab
         private Random random = new Random();
 
         public double[] TargetValue { get; private set; } // Wartość zadana
+        public double[] expectedValues { get; private set; } // Wartości wylosowane
         public double K = 0, Ri = 0, Ro = 0, fH = 0, fL = 0; // Wartości zadane
         public string SelectedConfiguration { get; private set; } // Wybrana konfiguracja
+        public string SelectedDifficulty { get; private set; } // Wybrany poziom trudności
 
         private double[] lastSimulationResult = {0,0,0,0,0};
 
@@ -59,6 +61,7 @@ namespace AmpLab
 
         private void SelectDifficulty(string difficulty)
         {
+            SelectedDifficulty = difficulty;
             TargetValue = difficulty switch
             {
                 "Easy" => targetEasy(K, Ri, Ro, fH, fL),
@@ -166,6 +169,7 @@ namespace AmpLab
                 Console.WriteLine("Ku: " + results[0]);
                 Console.WriteLine("Repeat: " + repeat);
             }while(repeat);
+            expectedValues = [RG1/1E3, RG2/1E3, RD/1E3, RS/1E3, CG*1E9, CS*1E9, CD*1E9];
             K = results[0];
             Ri = results[1];
             Ro = results[2];
@@ -222,6 +226,9 @@ namespace AmpLab
             if (SelectedConfiguration == "CD")
             {
                 inputRD.Enabled = false;
+                inputCD.Enabled = false;
+                inputRD.Visible = false;
+                inputCD.Visible = false;
             }
             switch (SelectedConfiguration)
             {
@@ -253,26 +260,26 @@ namespace AmpLab
                     inputCG.Left = (mainForm.Width / 2) - 268;
                     inputCG.Top = (mainForm.Height / 2) - 120;
                     inputCS.Left = (mainForm.Width / 2) + 142;
-                    inputCS.Top = (mainForm.Height / 2) - 43;
-                    inputCD.Left = (mainForm.Width / 2) + 45;
-                    inputCD.Top = (mainForm.Height / 2) - 180;
+                    inputCS.Top = (mainForm.Height / 2) - 129;
+                    //inputCD.Left = (mainForm.Width / 2) + 45;
+                    //inputCD.Top = (mainForm.Height / 2) - 180;
                     break;
                 case "CG":
                     mainForm.BackgroundImage = Image.FromFile("../../../images/Background_CG.png");
-                    inputRG1.Left = (mainForm.Width / 2) - 155;
+                    inputRG1.Left = (mainForm.Width / 2) - 92;
                     inputRG1.Top = (mainForm.Height / 2) - 258;
-                    inputRG2.Left = (mainForm.Width / 2) - 155;
+                    inputRG2.Left = (mainForm.Width / 2) - 92;
                     inputRG2.Top = (mainForm.Height / 2) - 43;
-                    inputRS.Left = (mainForm.Width / 2) - 28;
+                    inputRS.Left = (mainForm.Width / 2) + 37;
                     inputRS.Top = (mainForm.Height / 2) - 43;
-                    inputRD.Left = (mainForm.Width / 2) - 28;
+                    inputRD.Left = (mainForm.Width / 2) + 37;
                     inputRD.Top = (mainForm.Height / 2) - 258;
-                    inputCG.Left = (mainForm.Width / 2) - 268;
-                    inputCG.Top = (mainForm.Height / 2) - 120;
-                    inputCS.Left = (mainForm.Width / 2) + 142;
-                    inputCS.Top = (mainForm.Height / 2) - 43;
-                    inputCD.Left = (mainForm.Width / 2) + 45;
-                    inputCD.Top = (mainForm.Height / 2) - 180;
+                    inputCG.Left = (mainForm.Width / 2) - 230;
+                    inputCG.Top = (mainForm.Height / 2) - 33;
+                    inputCS.Left = (mainForm.Width / 2) - 237;
+                    inputCS.Top = (mainForm.Height / 2) - 60;
+                    inputCD.Left = (mainForm.Width / 2) + 80;
+                    inputCD.Top = (mainForm.Height / 2) - 184;
                     break;
                 default:
                     mainForm.BackgroundImage = null;
@@ -295,7 +302,30 @@ namespace AmpLab
             {
                 simulateButton.Click += (sender, e) => Simulate(inputRG1.Text, inputRG2.Text, inputRD.Text, inputRS.Text, inputCG.Text, inputCS.Text, inputCD.Text);
             }
-            helpButton.Click += (sender, e) => MessageBox.Show("Pomoc: tutaj znajdziesz wskazówki!", "Pomoc");
+            helpButton.Click += (sender, e) =>
+            {
+                double.TryParse(string.IsNullOrEmpty(InputRG1) ? "0" : InputRG1, out double RG1);
+                double.TryParse(string.IsNullOrEmpty(InputRG2) ? "0" : InputRG2, out double RG2);
+                double.TryParse(string.IsNullOrEmpty(InputRD) ? "0" : InputRD, out double RD);
+                double.TryParse(string.IsNullOrEmpty(InputRS) ? "0" : InputRS, out double RS);
+                double.TryParse(string.IsNullOrEmpty(InputCG) ? "0" : InputCG, out double CG);
+                double.TryParse(string.IsNullOrEmpty(InputCS) ? "0" : InputCS, out double CS);
+                double.TryParse(string.IsNullOrEmpty(InputCD) ? "0" : InputCD, out double CD);
+
+                var helpManager = new HelpManager(
+                    SelectedDifficulty,
+                    SelectedConfiguration,
+                    RG1,
+                    RG2,
+                    RD,
+                    RS,
+                    CG,
+                    CS,
+                    CD,
+                    expectedValues
+                );
+                helpManager.ShowHelp();
+            };
             notesButton.Click += (sender, e) => MessageBox.Show($"\tWartości zadane\tuzyskane\n\n" +
                                                                 $"Wzmocnienie:\t{TargetValue[0]:F2}\t{lastSimulationResult[0]:F2}\tV/V\n" +
                                                                 $"Rin:\t\t{TargetValue[1]/1000:F2}\t{lastSimulationResult[1]/1000:F2}\tkΩ\n" +
@@ -347,6 +377,7 @@ namespace AmpLab
             if (SelectedConfiguration == "CD")
             {
                 inputRD = "0";
+                inputCD = "0";
             }
             double.TryParse(inputRD, NumberStyles.Any, culture, out double RD);
             double.TryParse(inputRS, NumberStyles.Any, culture, out double RS);

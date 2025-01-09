@@ -252,6 +252,7 @@ namespace AmpLab
         public double[] SimulateCD(double RG1, double RG2, double RD, double RS, double CG, double CS, double CD)
         {
             RD = 0;
+            CD = 0;
             double error = 1;
             // Initialize variables
             double Id = 0, delta = -1;
@@ -355,7 +356,8 @@ namespace AmpLab
                 Width = 700,
                 Height = 400,
                 StartPosition = FormStartPosition.CenterParent,
-                BackgroundImage = Image.FromFile("../../../images/Background.png"),
+                
+                BackgroundImage = Image.FromFile("../../../images/MessageBoxBackground.png"),
                 BackgroundImageLayout = ImageLayout.Stretch
             };
 
