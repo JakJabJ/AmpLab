@@ -119,6 +119,7 @@ namespace AmpLab
         
         private double[] InputGenerator()
         {
+            Random random = new Random();
             bool repeat = false;
             double[] results;
             double RG1;
@@ -128,6 +129,8 @@ namespace AmpLab
             double CG;
             double CS;
             double CD;
+            int confGenerate = random.Next(1, 4);
+            Console.WriteLine(confGenerate);
             do
             {
                 // Randomize values
@@ -148,24 +151,26 @@ namespace AmpLab
 
 // Perform simulation
                 var simulationManager = new SimulationManager(this);
-                int confGenerate = random.Next(1, 4);
                 switch (confGenerate)
                 {
                     case 1:
                         results = simulationManager.SimulateCS(RG1, RG2, RD, RS, CG, CS, CD);
+                        Console.WriteLine("CS");
                         break;
                     case 2:
                         results = simulationManager.SimulateCG(RG1, RG2, RD, RS, CG, CS, CD);
+                        Console.WriteLine("CG");
                         break;
                     case 3:
                         results = simulationManager.SimulateCD(RG1, RG2, RD, RS, CG, CS, CD);
+                        Console.WriteLine("CD");
                         break; 
                     default:
                         results = new double[] {0,0,0,0,0,0,0};
                         break;
                 }
                 //results = simulationManager.SimulateCS(RG1, RG2, RD, RS, CG, CS, CD);
-                repeat = Math.Round(results[0],1) == 0 || results[5] < 0 || results[6] == 0 || results[7] == 1;
+                repeat = Math.Round(results[0],2) == 0 || results[5] < 0 || results[6] == 0 || results[7] == 1;
                 Console.WriteLine("Ku: " + results[0]);
                 Console.WriteLine("Repeat: " + repeat);
             }while(repeat);
@@ -392,7 +397,10 @@ namespace AmpLab
             bool isInvalid;
             if (SelectedConfiguration == "CD")
             {
-                isInvalid = results[5] <= 0 || results[6] == 0 || RG1 == 0 || RG2 == 0 || RS == 0 || CG == 0 || CS == 0 || CD == 0 || results[7] == 1;
+                isInvalid = results[5] <= 0 || results[6] == 0 || RG1 == 0 || RG2 == 0 || RS == 0 || CG == 0 || CS == 0 || results[7] == 1;
+                Console.WriteLine(results[5]);
+                Console.WriteLine(results[6]);
+                Console.WriteLine(results[7]);
             }
             else
             {

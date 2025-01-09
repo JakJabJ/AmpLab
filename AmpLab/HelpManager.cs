@@ -32,7 +32,7 @@ namespace AmpLab
 
         public void ShowHelp()
         {
-            string[] elements = { "R\u2093\u2081", "R\u2093\u2082", "R\u2091", "R\u209B", "C\u2093", "C\u209B", "C\u2091" };
+            string[] elements = { "RG1", "RG2", "RD", "RS", "CG", "CS", "CD" };
             elements = elements.Select(e => e.Replace("\u2093", "G")) // Znak G z kropką dolną jako wizualna alternatywa.
                 .ToArray();
             double[] inputs = { RG1, RG2, RD, RS, CG, CS, CD };
@@ -80,6 +80,7 @@ namespace AmpLab
                     message += "\nPamiętaj, żeby wykonać symulację po każdych zmianach wartości\n\nPoniżej znajdziesz podpowiedzi, które pomogą Ci obrać właściwy kierunek.\n";
                     for (int i = 0; i < inputs.Length; i++)
                     {
+                        
                         double lowerBound = 0.9 * expectedValues[i];
                         double upperBound = 1.1 * expectedValues[i];
                         if (inputs[i] >= lowerBound && inputs[i] <= upperBound)
@@ -93,6 +94,10 @@ namespace AmpLab
                         else
                         {
                             message += $"Zmniejsz {elements[i]}\n";
+                        }
+                        if(configuration == "CD" && (i==1 || i==5))
+                        {
+                            i++;
                         }
                     }
 
